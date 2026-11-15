@@ -1,9 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { CategoryType, Prisma } from '@prisma/client';
-import { getValidated } from '../types/validated.js';
+import { getValidated } from '../types/validated.ts';
 import db from '../config/db.ts';
-import { createCurationForStyle, createStyle, getCurationList } from '../services/style.service.js';
-import { comparePassword } from '../utils/compare.password.js';
+import { comparePassword } from '../utils/compare.password.ts';
 
 type HttpError = Error & { statusCode?: number };
 
@@ -87,14 +86,13 @@ const toCategoryType = (value: string): CategoryType => {
 
   const allowed = ['TOP', 'BOTTOM', 'OUTER', 'SHOES', 'ACC'] as const;
   if (!allowed.includes(upper as any)) {
-    const err = new Error(`Invalid category type: ${value}`);
+    const err: HttpError = new Error(`Invalid category type: ${value}`);
     err.statusCode = 400;
     throw err;
   }
 
   return upper as CategoryType;
 };
-
 
 async function createImagesAndReturnIds(imageUrls: string[] = []) {
   const imageObjs: Array<{ imageId: number; imageUrl: string }> = [];
@@ -139,7 +137,7 @@ export class StyleController {
         const allowed = ['TOP', 'BOTTOM', 'OUTER', 'SHOES', 'ACC'] as const;
 
         if (!allowed.includes(upper as any)) {
-          const err = new Error(`Invalid category type: ${value}`);
+          const err: HttpError = new Error(`Invalid category type: ${value}`);
           err.statusCode = 400;
           throw err;
         }
@@ -427,15 +425,24 @@ export class StyleController {
       const { styleId } = params;
       const { nickname, password, trendy, personality, practicality, costEffectiveness, content } = body;
 
-      const newCuration = await createCurationForStyle({
-        styleId: Number(styleId),
-        nickname,
-        password,
-        trendy,
-        personality,
-        practicality,
-        costEffectiveness,
-        content,
+      const style = await db.style.findUnique({ where: { styleId: Number(styleId) } });
+      if (!style) {
+        const error: HttpError = new Error('스타일을 찾을 수 없습니다.');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const newCuration = await db.curation.create({
+        data: {
+          styleId: Number(styleId),
+          nickname,
+          password,
+          trendy,
+          personality,
+          practicality,
+          costEffectiveness,
+          content,
+        },
       });
 
       const response = {
@@ -459,25 +466,43 @@ export class StyleController {
   }
 
   // 스타일에 대한 큐레이션 목록 조회
-  static async getCurationList(req: Request, res: Response, next: NextFunction) {
+  async getCurationList(req: Request, res: Response, next: NextFunction) {
     try {
       const { params, query } = getValidated<unknown, StyleIdParams, GetCurationListQuery>(req);
       const { styleId } = params;
       const { page, pageSize, searchBy, keyword } = query;
 
-      const curationsData = await getCurationList({
-        styleId: Number(styleId),
-        page,
-        pageSize,
-        searchBy,
-        keyword,
-      });
+      const style = await db.style.findUnique({ where: { styleId: Number(styleId) } });
+      if (!style) return res.status(404).json({ message: '스타일을 찾을 수 없습니다.' });
+      if (searchBy && !['nickname', 'content'].includes(searchBy)) {
+        return res.status(400).json({ message: '유효하지 않은 검색 기준입니다.' });
+      }
 
-      const mappedData = curationsData.data.map((curation: any) => {
+      const currentPage = Number(page ?? 1);
+      const currentPageSize = Number(pageSize ?? 10);
+      const where: Prisma.CurationWhereInput = { styleId: Number(styleId) };
+      if (keyword && searchBy === 'nickname') where.nickname = { contains: keyword };
+      if (keyword && searchBy === 'content') where.content = { contains: keyword };
+
+      const [totalItemCount, data] = await Promise.all([
+        db.curation.count({ where }),
+        db.curation.findMany({
+          where,
+          skip: (currentPage - 1) * currentPageSize,
+          take: currentPageSize,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            comments: true,
+            style: { select: { nickname: true } },
+          },
+        }),
+      ]);
+
+      const mappedData = data.map((curation) => {
         let comment: Record<string, unknown> = {};
         const latestComment = curation.comments;
 
-        if (curation.comments) {
+        if (latestComment) {
           comment = {
             id: latestComment.commentId,
             nickname: curation.style.nickname,
@@ -500,9 +525,9 @@ export class StyleController {
       });
 
       res.status(200).json({
-        currentPage: curationsData.currentPage,
-        totalPages: curationsData.totalPages,
-        totalItemCount: curationsData.totalItemCount,
+        currentPage,
+        totalPages: Math.ceil(totalItemCount / currentPageSize),
+        totalItemCount,
         data: mappedData,
       });
     } catch (err: unknown) {

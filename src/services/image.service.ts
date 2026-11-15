@@ -1,9 +1,9 @@
 import type { Image } from '@prisma/client';
-import db from '../config/db.js';
+import db from '../config/db.ts';
 
 type CreateImageInput = {
-  imageUrl: string
-}
+  imageUrl: string;
+};
 
 export class ImageUploadService {
   async createImage({ imageUrl }: CreateImageInput): Promise<Image> {
@@ -14,4 +14,3 @@ export class ImageUploadService {
     });
   }
 }
-

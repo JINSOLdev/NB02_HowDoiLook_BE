@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { getValidated } from '../types/validated.js';
-import RankService from '../services/rank.service.js';
+import { getValidated } from '../types/validated.ts';
+import { RankService } from '../services/rank.service.ts';
 
 type RankBy = 'total' | 'trendy' | 'personality' | 'practicality' | 'costEffectiveness';
 
@@ -20,7 +20,7 @@ export class RankController {
   // 랭킹 조회
   async getRankingList(req: Request, res: Response, next: NextFunction) {
     try {
-      const { query } = getValidated<unknown, unknown, RankingQuery>(req)
+      const { query } = getValidated<unknown, unknown, RankingQuery>(req);
       const { page = 1, pageSize = 10, rankBy = 'total' } = query;
 
       const validRankBy: RankBy[] = ['total', 'trendy', 'personality', 'practicality', 'costEffectiveness'];

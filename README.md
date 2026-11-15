@@ -61,6 +61,18 @@ gantt
 |   스토리지   | google firebase                                                                       |
 |     배포     | render.com(프론트엔드,백엔드,데이터베이스)                                            |
 
+## 로컬 실행
+
+Node.js 22.15.0 이상에서 아래 명령으로 의존성을 설치하고 개발 서버를 실행합니다.
+
+```bash
+npm install
+npm run dev
+```
+
+`.env`에 `DATABASE_URL`을 설정해야 데이터베이스 API를 사용할 수 있습니다. 이미지 업로드를 사용하려면
+`FIREBASE_CONFIG`에 Firebase 서비스 계정 JSON도 설정하세요. 기본 개발 포트는 `5050`입니다.
+
 ---
 
 ## 백엔드 서비스 흐름
@@ -116,7 +128,7 @@ flowchart TD
   - Issue 생성 시 팀 Gantt 시트 실시간 업데이트를 위한 연동
   - [이슈 템플릿 문서](./.github/ISSUE_TEMPLATE/todo-template.md)
   - Github Issue -> Google Run Function
-  - Google Run Function(Node.js, Axios) -> Google Apps Script
+  - Google Run Function(Node.ts, Axios) -> Google Apps Script
   - Google Apps Script -> Google Spreadsheet
 
 - Github PR 과 Discord 연동
@@ -151,7 +163,7 @@ flowchart TD
 - Log(/logs)
 
   - 데이터베이스에 저장된 에러 로그 목록을 받기 위한 API
-  - [라우터 코드](./src/routes/log-route.js)
+  - [라우터 코드](./src/routes/log-route.ts)
   - [컨트롤러 코드](./src/controllers/log-controller.ts)
   - [서비스 코드](./src/services/log-service.ts)
   - [스키마](./prisma/schema.prisma#L118-L126)
@@ -182,7 +194,7 @@ flowchart TD
 - Health Check(/)
 
   - 서버 헬스체크를 위한 API
-  - [라우터 코드](./src/routes/root-route.js)
+  - [라우터 코드](./src/routes/root-route.ts)
   - [컨트롤러 코드](./src/controllers/root-controller.ts)
   - 요청 예시
 
@@ -211,7 +223,7 @@ flowchart TD
 
 - Global Error Handler
   - 발생하는 모든 에러 상황에 메세지를 반환하기 위한 미들웨어
-  - [미들웨어 코드](./src/middlewares/error-middleware.js)
+  - [미들웨어 코드](./src/middlewares/error-middleware.ts)
   - 표준 statusCode 기반(MDN 기준)
   - Service 반환 객체와 Dev 반환 객체가 다름
 
@@ -220,7 +232,7 @@ flowchart TD
 - Swagger 연동
 
   - API 테스트를 위한 Swagger 연동
-  - [라우터 코드](./src/routes/doc-route.js)
+  - [라우터 코드](./src/routes/doc-route.ts)
   - [미들웨어 코드](./src/middlewares/swagger-middleware.ts)
   - [OPENAPI.JSON](./openapi.json)
   - API 명세서 바탕으로 openapi.json 정리
@@ -251,7 +263,7 @@ flowchart TD
   - Prisma 관계설정 기반으로 중간 테이블 자동 연결/갱신
   - FE 요구사항 반영해 style, tags, categories, imageUrls 모두 명세대로 직렬화/포맷 맞춤 응답
   - Style 삭제 시 외래키 제약(PK-FK) 오류 발생 문제 해결 (cascade delete 등 적용)
-  - [라우터 코드](./src/routes/style-route.js)
+  - [라우터 코드](./src/routes/style-route.ts)
   - [컨트롤러 코드](./src/controllers/style-controller.ts)
   - [서비스 코드](./src/services/style-service.ts)
 
@@ -319,11 +331,11 @@ flowchart TD
   - 큐레이팅 등록 시 비밀번호 해싱(Hashing) 로직 적용 및 안전한 저장 처리
   - 큐레이팅 수정/삭제 시 입력된 비밀번호와 저장된 해시 비밀번호의 안전한 비교(Compare Password) 로직 적용
   - 큐레이팅 삭제 시 해당 스타일의 curationCount를 트랜잭션(Transaction)으로 감소 처리
-  - [라우터 코드 (큐레이팅 자체, (PUT, DELETE))](./src/routes/curation-routes.js)
-  - [라우터 코드 (스타일 연관, (POST, GET))](./src/routes/style-route.js#L23-L24)
-  - [컨트롤러 코드 (큐레이팅 자체, (PUT, DELETE)](./src/controllers/curation-controller.js)
+  - [라우터 코드 (큐레이팅 자체, (PUT, DELETE))](./src/routes/curation-routes.ts)
+  - [라우터 코드 (스타일 연관, (POST, GET))](./src/routes/style-route.ts#L23-L24)
+  - [컨트롤러 코드 (큐레이팅 자체, (PUT, DELETE)](./src/controllers/curation-controller.ts)
   - [컨트롤러 코드 (스타일 연관, (POST, GET))](./src/controllers/style-controller.ts#L337)
-  - [서비스 코드 (큐레이팅 자체, (PUT, DELETE)](./src/services/curation-service.js)
+  - [서비스 코드 (큐레이팅 자체, (PUT, DELETE)](./src/services/curation-service.ts)
   - [서비스 코드 (스타일 연관, (POST, GET)](./src/services/style-service.ts#L97)
 
   - API 응답 예시
@@ -489,7 +501,7 @@ flowchart TD
 - Ranking (/ranking)
 
   - 스타일 랭킹 목록 조회 및 페이지네이션 처리를 위한 API
-  - [라우터 코드](./src/routes/rank-route.js)
+  - [라우터 코드](./src/routes/rank-route.ts)
   - [컨트롤러 코드](./src/controllers/rank-controller.ts)
   - [서비스 코드](./src/services/rank-service.ts)
   - 응답 예시
@@ -526,7 +538,7 @@ flowchart TD
 - Image Upload (/images)
 
   - 이미지 업로드를 위한 API
-  - [라우터 코드](./src/routes/image-route.js)
+  - [라우터 코드](./src/routes/image-route.ts)
   - [컨트롤러 코드](./src/controllers/image-controller.ts)
   - [서비스 코드](./src/services/image-service.ts)
 
@@ -566,7 +578,7 @@ flowchart TD
 - Comment(/comments)
 
   - 큐레이션에 답글을 달기 위한 API
-  - [라우터 코드](./src/routes/comment-route.js)
+  - [라우터 코드](./src/routes/comment-route.ts)
   - [컨트롤러 코드](./src/controllers/comment-controller.ts)
   - [서비스 코드](./src/services/comment-service.ts)
 
@@ -643,10 +655,10 @@ NB02-HOW-DO-I-LOOK-TEAM1
 ┃ ┣ config
 ┃ ┃ ┣ db.ts
 ┃ ┃ ┣ firebase-admin.ts
-┃ ┃ ┣ uploads-path.js
+┃ ┃ ┣ uploads-path.ts
 ┃ ┣ controllers
 ┃ ┃ ┣ comment-controller.ts
-┃ ┃ ┣ curation-controller.js
+┃ ┃ ┣ curation-controller.ts
 ┃ ┃ ┣ image-controller.ts
 ┃ ┃ ┣ log-controller.ts
 ┃ ┃ ┣ rank-controller.ts
@@ -656,22 +668,22 @@ NB02-HOW-DO-I-LOOK-TEAM1
 ┃ ┣ middlewares
 ┃ ┃ ┣ bcrypt-middleware.ts
 ┃ ┃ ┣ dto-middleware.ts
-┃ ┃ ┣ error-middleware.js
+┃ ┃ ┣ error-middleware.ts
 ┃ ┃ ┣ multer-middleware.ts
 ┃ ┃ ┣ swagger-middleware.ts
 ┃ ┣ routes
-┃ ┃ ┣ comment-route.js
-┃ ┃ ┣ curation-route.js
-┃ ┃ ┣ doc-route.js
-┃ ┃ ┣ image-route.js
-┃ ┃ ┣ log-route.js
-┃ ┃ ┣ rank-route.js
-┃ ┃ ┣ root-route.js
-┃ ┃ ┣ style-route.js
+┃ ┃ ┣ comment-route.ts
+┃ ┃ ┣ curation-route.ts
+┃ ┃ ┣ doc-route.ts
+┃ ┃ ┣ image-route.ts
+┃ ┃ ┣ log-route.ts
+┃ ┃ ┣ rank-route.ts
+┃ ┃ ┣ root-route.ts
+┃ ┃ ┣ style-route.ts
 ┃ ┃ ┣ tag-route.ts
 ┃ ┣ services
 ┃ ┃ ┣ comment-service.ts
-┃ ┃ ┣ curation-service.js
+┃ ┃ ┣ curation-service.ts
 ┃ ┃ ┣ image-service.ts
 ┃ ┃ ┣ log-service.ts
 ┃ ┃ ┣ rank-service.ts
@@ -680,12 +692,12 @@ NB02-HOW-DO-I-LOOK-TEAM1
 ┃ ┣ utils
 ┃ ┃ ┣ compare-password.ts
 ┃ ┃ ┣ hash-password.ts
-┃ ┣ server.js
+┃ ┣ server.ts
 ┣ .env.example
 ┣ .gitignore
 ┣ .prettierrc
-┣ eslint.confing.js
-┣ index.js
+┣ eslint.confing.ts
+┣ index.ts
 ┣ openapi.json
 ┣ package-lock.json
 ┣ package.json

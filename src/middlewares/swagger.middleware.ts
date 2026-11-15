@@ -28,7 +28,7 @@ export const swaggerMiddlewareStatic = swaggerUi.serve;
 // 렌더링 미들웨어
 export const swaggerMiddlewareRender: RequestHandler = (req, res, next) => {
   if (!swaggerSpec) {
-    const error = new Error('swagger spec not loaded') as Error & { statusCode?: number};
+    const error = new Error('swagger spec not loaded') as Error & { statusCode?: number };
     error.statusCode = 500;
     return next(error);
   }

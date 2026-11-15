@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { getValidated } from '../types/validated.js';
-import { createCommentService, updateCommentService, deleteCommentService } from '../services/comment.service.js';
+import { getValidated } from '../types/validated.ts';
+import { createCommentService, updateCommentService, deleteCommentService } from '../services/comment.service.ts';
 
 type CreateCommentBody = { password: string; content: string };
 type CreateCommentParams = { curationId: number | string };
@@ -12,7 +12,6 @@ type DeleteCommentBody = { password: string };
 type DeleteCommentParams = { commentId: number | string };
 
 export class CommentController {
-
   // 댓글 등록
   async createComment(req: Request, res: Response, next: NextFunction) {
     try {

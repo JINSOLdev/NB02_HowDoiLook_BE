@@ -1,12 +1,12 @@
 import { Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
-import bucket from '../config/firebase.admin.js';
-import ImageUploadService from '../services/image.service.js';
+import getFirebaseBucket from '../config/firebase.admin.ts';
+import { ImageUploadService } from '../services/image.service.ts';
 
 type MulterRequest = {
-  file?: Express.Multer.File
-}
+  file?: Express.Multer.File;
+};
 
 export class ImageUploadController {
   // 이미지 업로드 서비스 객체 생성
@@ -32,6 +32,7 @@ export class ImageUploadController {
       const timestamp = Date.now();
       const firebaseFileName = `${safeBaseName}_${timestamp}${ext}`;
       const destination = `images/${firebaseFileName}`;
+      const bucket = getFirebaseBucket();
 
       await bucket.upload(tempPath, {
         destination,

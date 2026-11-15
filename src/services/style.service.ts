@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
-import db from '../config/db.js';
-import { hashPassword } from '../utils/hash.password.js';
+import db from '../config/db.ts';
+import { hashPassword } from '../utils/hash.password.ts';
 
 type HttpError = Error & { statusCode?: number };
 const toNumber = (v: number | string): number => (typeof v === 'number' ? v : Number(v));

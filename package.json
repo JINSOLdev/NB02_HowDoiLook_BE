@@ -4,14 +4,14 @@
   "engines": {
     "node": ">=22.15.0"
   },
-  "main": "index.js",
+  "main": "index.ts",
   "prisma": {
     "seed": "node prisma/seed.ts"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "nodemon --watch dist/index.js",
-    "start": "node dist/index.js"
+    "dev": "nodemon --watch index.ts --watch src --ext ts,json --exec tsx index.ts",
+    "start": "tsx index.ts"
   },
     "keywords": [],
   "author": "",
@@ -42,6 +42,7 @@
     "prisma": "^6.9.0",
     "superstruct": "^2.0.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }

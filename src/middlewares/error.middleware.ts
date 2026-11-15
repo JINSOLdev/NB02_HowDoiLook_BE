@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler } from 'express';
-import db from '../config/db.js';
+import db from '../config/db.ts';
 
 const statusMessages: Record<number, string> = {
   100: '계속 진행해도 좋습니다',

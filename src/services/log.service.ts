@@ -1,5 +1,5 @@
 import type { Prisma, Log } from '@prisma/client';
-import db from '../config/db.js';
+import db from '../config/db.ts';
 
 // 내부 상수
 const PRISMA_ORDER_BY = { ASCEND: 'asc', DESCEND: 'desc' } as const;

@@ -1,7 +1,7 @@
 import type { Curation } from '@prisma/client';
-import db from '../config/db.js';
-import { comparePassword } from '../utils/compare.password.js';
-import { hashPassword } from '../utils/hash.password.js';
+import db from '../config/db.ts';
+import { comparePassword } from '../utils/compare.password.ts';
+import { hashPassword } from '../utils/hash.password.ts';
 
 type HttpError = Error & { statusCode?: number };
 

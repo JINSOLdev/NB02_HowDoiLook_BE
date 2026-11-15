@@ -3,18 +3,18 @@ import morgan from 'morgan';
 import cors from 'cors';
 import fs from 'fs';
 
-import curationRouter from './routes/curation.route.js';
-import commentRouter from './routes/comment.route.js';
-import styleRouter from './routes/style.route.js';
-import imageRouter from './routes/image.route.js';
-import rankRouter from './routes/rank.route.js';
-import rootRouter from './routes/root.route.js';
-import tagRouter from './routes/tag.route.js';
-import logRouter from './routes/log.route.js';
-import docRouter from './routes/doc.route.js';
+import curationRouter from './routes/curation.route.ts';
+import commentRouter from './routes/comment.route.ts';
+import styleRouter from './routes/style.route.ts';
+import imageRouter from './routes/image.route.ts';
+import rankRouter from './routes/rank.route.ts';
+import rootRouter from './routes/root.route.ts';
+import tagRouter from './routes/tag.route.ts';
+import logRouter from './routes/log.route.ts';
+import docRouter from './routes/doc.route.ts';
 
-import uploadsDir from './config/uploads.path.js';
-import errorHandler from './middlewares/error.middleware.js';
+import uploadsDir from './config/uploads.path.ts';
+import errorHandler from './middlewares/error.middleware.ts';
 
 function getPort(envValue: string | undefined, fallback: number): number {
   const number = Number(envValue);
@@ -26,7 +26,7 @@ export default class Server {
   #port: number;
 
   constructor() {
-    this.#app = express(); 
+    this.#app = express();
     this.#port = getPort(process.env.EXPRESS_PORT, 5000);
 
     this.#initializePreMiddlewares();
@@ -36,7 +36,7 @@ export default class Server {
 
   #initializePreMiddlewares(): void {
     if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true});
+      fs.mkdirSync(uploadsDir, { recursive: true });
       console.log(`uploads 폴더 생성`);
     }
 

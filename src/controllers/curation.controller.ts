@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { getValidated } from '../types/validated.ts';
-import { updateCurationService, deleteCurationService } from '../services/curation.service.js';
+import { updateCurationService, deleteCurationService } from '../services/curation.service.ts';
 
 type CurationParams = { curationId: number | string };
 

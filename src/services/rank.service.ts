@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client';
-import db from '../config/db.js';
+import db from '../config/db.ts';
 
 type RankingStyle = Prisma.StyleGetPayload<{
   include: {
@@ -27,4 +27,3 @@ export class RankService {
     });
   }
 }
-
