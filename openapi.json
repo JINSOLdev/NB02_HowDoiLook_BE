@@ -1435,6 +1435,112 @@
     }
   }
 },
+    "/images/analyze": {
+      "post": {
+        "tags": ["이미지"],
+        "summary": "옷 이미지 분석",
+        "description": "이미지 한 장에서 확인되는 옷의 종류, 색상, 특징을 Meta Model API로 분석합니다. 위치 좌표는 필요하지 않으며 파일과 분석 결과를 저장하지 않습니다. Firebase 및 DB에 접근하지 않습니다. 옷을 식별할 수 없으면 closetItems는 빈 배열이고 summary에 이유를 반환합니다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPEG, PNG 또는 WebP 이미지 한 장. 최대 8 MiB(8,388,608 bytes). 파일 내용이 MIME 형식과 일치해야 합니다."
+                  }
+                }
+              },
+              "encoding": {
+                "image": {
+                  "contentType": "image/jpeg, image/png, image/webp"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "분석 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["summary", "closetItems"],
+                  "properties": {
+                    "summary": { "type": "string", "description": "이미지 분석 요약 또는 옷을 식별하지 못한 이유" },
+                    "closetItems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["category", "color", "description"],
+                        "properties": {
+                          "category": { "type": "string" },
+                          "color": { "type": "string" },
+                          "description": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "summary": "흰색 긴팔 셔츠 한 벌이 보입니다.",
+                  "closetItems": [
+                    { "category": "상의", "color": "흰색", "description": "앞면에 단추와 칼라가 있는 긴팔 셔츠" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "파일 누락, 복수 파일, 잘못된 필드·MIME 형식 또는 이미지 내용",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } }
+              }
+            }
+          },
+          "413": {
+            "description": "파일 크기 8 MiB 초과",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } }
+              }
+            }
+          },
+          "502": {
+            "description": "모델 API 연결·응답 오류 또는 유효하지 않은 분석 결과",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } }
+              }
+            }
+          },
+          "503": {
+            "description": "MODEL_API_KEY 미설정 또는 모델 API의 인증·권한·요청 제한(401, 403, 429)",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } }
+              }
+            }
+          },
+          "504": {
+            "description": "모델 API 요청이 30초 안에 완료되지 않음",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } }
+              }
+            }
+          }
+        }
+      }
+    },
 "/logs": {
   "get": {
     "tags": ["로그"],

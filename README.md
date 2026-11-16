@@ -73,6 +73,51 @@ npm run dev
 `.env`에 `DATABASE_URL`을 설정해야 데이터베이스 API를 사용할 수 있습니다. 이미지 업로드를 사용하려면
 `FIREBASE_CONFIG`에 Firebase 서비스 계정 JSON도 설정하세요. 기본 개발 포트는 `5050`입니다.
 
+## 옷 이미지 분석
+
+`POST /images/analyze`에 이미지 한 장을 보내면 Meta Model API가 옷의 종류, 색상, 특징을 한국어로 분석합니다.
+`.env`의 `MODEL_API_KEY`가 필요하며, `MODEL_NAME`으로 모델을 선택할 수 있습니다(기본값: `muse-spark-1.3`).
+
+요청은 `multipart/form-data`의 `image` 필드에 JPEG, PNG 또는 WebP 파일 한 장을 첨부합니다.
+파일 크기는 최대 8 MiB(8,388,608 bytes)이며, 파일 내용도 형식과 일치해야 합니다. 위치 좌표는 필요하지 않습니다.
+이미지 바이트는 메모리에서 Base64로 변환해 Meta에 전달하며, 이 API는 파일·분석 결과를 저장하거나 Firebase·DB에 접근하지 않습니다.
+
+```bash
+curl -X POST http://localhost:5050/images/analyze \
+  -F 'image=@/path/to/clothes.jpg;type=image/jpeg'
+```
+
+성공 응답(`200 OK`) 예시:
+
+```json
+{
+  "summary": "흰색 긴팔 셔츠 한 벌이 보입니다.",
+  "closetItems": [
+    {
+      "category": "상의",
+      "color": "흰색",
+      "description": "앞면에 단추와 칼라가 있는 긴팔 셔츠"
+    }
+  ]
+}
+```
+
+옷이 보이지 않거나 식별하기 어려우면 `closetItems`는 빈 배열이고 `summary`에 이유를 반환합니다.
+날씨에 따른 코디 추천은 이 분석 API의 응답에 포함하지 않습니다.
+
+실패 응답은 `{ "message": "오류 설명" }` 형식입니다.
+
+| 상태 코드 | 원인 |
+| --- | --- |
+| `400` | 파일 누락, 복수 파일, 잘못된 필드·MIME 형식 또는 이미지 내용 |
+| `413` | 파일 크기 8 MiB 초과 |
+| `502` | 모델 API 연결·응답 오류 또는 유효하지 않은 분석 결과 |
+| `503` | API 키 미설정 또는 모델 API의 인증·권한·요청 제한(`401`, `403`, `429`) |
+| `504` | 모델 API 요청이 30초 안에 완료되지 않음 |
+
+연동 방식은 Meta 공식 [이미지 이해 문서](https://dev.meta.ai/docs/media-understanding)의 Base64 이미지 입력과
+[구조화된 출력 문서](https://dev.meta.ai/docs/structured-output)의 JSON Schema 응답을 따릅니다.
+
 ---
 
 ## 백엔드 서비스 흐름
