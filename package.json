@@ -11,9 +11,10 @@
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --watch index.ts --watch src --ext ts,json --exec tsx index.ts",
+    "test": "node --import tsx --test",
     "start": "tsx index.ts"
   },
-    "keywords": [],
+  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {

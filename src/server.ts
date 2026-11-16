@@ -12,6 +12,8 @@ import rootRouter from './routes/root.route.ts';
 import tagRouter from './routes/tag.route.ts';
 import logRouter from './routes/log.route.ts';
 import docRouter from './routes/doc.route.ts';
+import recommendationRouter from './routes/recommendation.route.ts';
+import weatherRouter from './routes/weather.route.ts';
 
 import uploadsDir from './config/uploads.path.ts';
 import errorHandler from './middlewares/error.middleware.ts';
@@ -58,6 +60,9 @@ export default class Server {
     this.#app.use('/comments', commentRouter);
     this.#app.use('/logs', logRouter);
     this.#app.use('/docs', docRouter);
+    this.#app.use('/weather', weatherRouter);
+    this.#app.use('/recommend/weather', weatherRouter);
+    this.#app.use('/recommendations', recommendationRouter);
   }
 
   // 에러 핸들러 등록
