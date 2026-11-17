@@ -90,13 +90,27 @@ test('reports the upstream reason when the weather provider returns 404', async 
   }
 });
 
-test('sends the closet image and weather to Meta and parses its structured recommendation', async () => {
+test('sends the outfit image and weather to Meta and parses suitability and additional item recommendations', async () => {
   const originalFetch = globalThis.fetch;
   const originalApiKey = process.env.MODEL_API_KEY;
   process.env.MODEL_API_KEY = 'test-meta-key';
 
   const recommendation = {
     closetItems: [{ category: '상의', color: '흰색', description: '긴팔 셔츠' }],
+    suitability: {
+      status: 'needs_adjustment',
+      reason: '낮에는 괜찮지만 체감 기온이 낮아지는 아침저녁에는 겉옷이 필요합니다.',
+      concerns: ['체감 최저 6°C에는 셔츠만으로 추울 수 있습니다.'],
+    },
+    additionalItems: [
+      {
+        category: '아우터',
+        name: '가디건',
+        color: '남색',
+        reason: '쌀쌀한 아침저녁에 보온을 더할 수 있습니다.',
+        stylingTip: '흰색 셔츠 위에 걸치고 낮에는 벗어 휴대하세요.',
+      },
+    ],
     outfits: [
       {
         name: '가벼운 출근 코디',
@@ -124,6 +138,10 @@ test('sends the closet image and weather to Meta and parses its structured recom
     assert.ok(Array.isArray(userContent));
     assert.equal(userContent[1]?.image_url?.url, 'data:image/jpeg;base64,Y2xvc2V0');
     assert.equal(userContent[0]?.type, 'text');
+    assert.match(userContent[0]?.text ?? '', /Seoul/);
+    assert.match(userContent[0]?.text ?? '', /8~15°C/);
+    assert.match(userContent[0]?.text ?? '', /6~14°C/);
+    assert.match(userContent[0]?.text ?? '', /20%/);
     assert.equal(requestBody.response_format.type, 'json_schema');
     assert.equal(requestBody.response_format.json_schema.name, 'outfit_recommendation');
 

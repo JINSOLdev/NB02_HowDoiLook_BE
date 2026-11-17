@@ -1541,6 +1541,425 @@
         }
       }
     },
+    "/recommendations/outfit": {
+      "post": {
+        "tags": [
+          "코디 추천"
+        ],
+        "summary": "날씨 기반 코디 평가와 추가 아이템 추천",
+        "description": "위치 좌표로 OpenWeather 예보를 조회한 뒤 이미지와 날씨를 Meta에 함께 전달해 현재 코디의 적합성과 추가 아이템을 추천합니다. /weather 또는 /images/analyze 선행 호출은 필요하지 않습니다. 날씨는 해당 지역 오늘 날짜의 남은 예보 시간대 요약입니다. closetItems는 실제 보이는 옷, additionalItems는 추가 제안입니다. 파일과 결과를 저장하거나 Firebase·DB에 접근하지 않습니다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "image",
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPEG, PNG 또는 WebP 이미지 한 장, 최대 8 MiB(8,388,608 bytes). 파일 내용이 MIME 형식과 일치해야 합니다."
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "format": "double",
+                    "minimum": -90,
+                    "maximum": 90,
+                    "example": 37.5665
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "format": "double",
+                    "minimum": -180,
+                    "maximum": 180,
+                    "example": 126.978
+                  }
+                }
+              },
+              "encoding": {
+                "image": {
+                  "contentType": "image/jpeg, image/png, image/webp"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "평가·추천 성공. 옷을 식별할 수 없으면 suitability.status는 unknown이고 모든 아이템·코디 배열은 비어 있습니다.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "weather",
+                    "closetItems",
+                    "suitability",
+                    "additionalItems",
+                    "outfits",
+                    "weatherAdvice"
+                  ],
+                  "properties": {
+                    "weather": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "location",
+                        "date",
+                        "description",
+                        "minTemperature",
+                        "maxTemperature",
+                        "feelsLikeMin",
+                        "feelsLikeMax",
+                        "humidity",
+                        "maxWindSpeed",
+                        "precipitationProbability",
+                        "temperatureUnit",
+                        "windSpeedUnit"
+                      ],
+                      "properties": {
+                        "location": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "minTemperature": {
+                          "type": "number"
+                        },
+                        "maxTemperature": {
+                          "type": "number"
+                        },
+                        "feelsLikeMin": {
+                          "type": "number"
+                        },
+                        "feelsLikeMax": {
+                          "type": "number"
+                        },
+                        "humidity": {
+                          "type": "number"
+                        },
+                        "maxWindSpeed": {
+                          "type": "number"
+                        },
+                        "precipitationProbability": {
+                          "type": "number",
+                          "description": "강수 확률(%)"
+                        },
+                        "temperatureUnit": {
+                          "type": "string",
+                          "enum": [
+                            "°C",
+                            "°F",
+                            "K"
+                          ]
+                        },
+                        "windSpeedUnit": {
+                          "type": "string",
+                          "enum": [
+                            "m/s",
+                            "mph"
+                          ]
+                        }
+                      },
+                      "description": "OpenWeather 예보 중 해당 지역의 오늘 날짜에 속하는 남은 시간대 요약"
+                    },
+                    "closetItems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "category",
+                          "color",
+                          "description"
+                        ],
+                        "properties": {
+                          "category": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "사진에서 확인한 아이템만 포함"
+                    },
+                    "suitability": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status",
+                        "reason",
+                        "concerns"
+                      ],
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "suitable",
+                            "needs_adjustment",
+                            "unsuitable",
+                            "unknown"
+                          ],
+                          "description": "적합 / 보완 필요 / 부적합 / 판단 불가"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "description": "날씨와 사진을 근거로 한 평가 이유"
+                        },
+                        "concerns": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "기온·체감 기온·습도·바람·강수에 따른 우려 사항"
+                        }
+                      }
+                    },
+                    "additionalItems": {
+                      "type": "array",
+                      "maxItems": 5,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "category",
+                          "name",
+                          "color",
+                          "reason",
+                          "stylingTip"
+                        ],
+                        "properties": {
+                          "category": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "날씨와 기존 코디를 고려해 이 아이템을 추가하면 좋은 이유"
+                          },
+                          "stylingTip": {
+                            "type": "string",
+                            "description": "업로드한 코디와 조합하는 방법"
+                          }
+                        }
+                      },
+                      "description": "추가하면 좋은 옷·액세서리. 필요 없거나 옷을 식별할 수 없으면 빈 배열"
+                    },
+                    "outfits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "name",
+                          "items",
+                          "reason",
+                          "tips"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "tips": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "기존 아이템과 추천 아이템을 조합한 코디 예시"
+                    },
+                    "weatherAdvice": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "weather": {
+                    "location": "Seoul",
+                    "date": "2026-11-16",
+                    "description": "맑음",
+                    "minTemperature": 8,
+                    "maxTemperature": 15,
+                    "feelsLikeMin": 6,
+                    "feelsLikeMax": 14,
+                    "humidity": 55,
+                    "maxWindSpeed": 3,
+                    "precipitationProbability": 20,
+                    "temperatureUnit": "°C",
+                    "windSpeedUnit": "m/s"
+                  },
+                  "closetItems": [
+                    {
+                      "category": "상의",
+                      "color": "흰색",
+                      "description": "칼라와 단추가 있는 긴팔 셔츠"
+                    },
+                    {
+                      "category": "하의",
+                      "color": "파란색",
+                      "description": "발목까지 내려오는 청바지"
+                    }
+                  ],
+                  "suitability": {
+                    "status": "needs_adjustment",
+                    "reason": "긴팔 셔츠와 긴바지는 낮에 입기 좋지만, 체감 기온이 낮아지는 시간대에는 겉옷이 필요합니다.",
+                    "concerns": [
+                      "체감 최저 기온 6°C에서 상체가 추울 수 있습니다."
+                    ]
+                  },
+                  "additionalItems": [
+                    {
+                      "category": "아우터",
+                      "name": "가벼운 재킷",
+                      "color": "네이비",
+                      "reason": "낮은 체감 기온과 바람에 대비하기 좋습니다.",
+                      "stylingTip": "흰색 셔츠 위에 걸치고 더워지면 벗어 휴대하세요."
+                    }
+                  ],
+                  "outfits": [
+                    {
+                      "name": "재킷을 더한 데일리 코디",
+                      "items": [
+                        "흰색 긴팔 셔츠",
+                        "파란색 청바지",
+                        "추천 아이템: 네이비 가벼운 재킷"
+                      ],
+                      "reason": "기존 코디에 보온할 수 있는 겉옷을 더해 체감 기온 변화에 대응합니다.",
+                      "tips": "기온이 높은 시간대에는 재킷을 벗어 조절하세요."
+                    }
+                  ],
+                  "weatherAdvice": "낮은 체감 기온에 대비해 겉옷을 챙기세요."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "이미지·좌표 누락, 잘못된 좌표, 이미지 필드·형식·내용 오류 또는 복수 파일",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "파일 크기 8 MiB 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "날씨·모델 API 연결·응답 오류 또는 유효하지 않은 추천 결과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API 키 미설정, 날씨 API 인증 실패(401), 모델 API 인증·권한·요청 제한(401, 403, 429)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "날씨 API(10초) 또는 모델 API(30초) 요청 시간 초과",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
 "/logs": {
   "get": {
     "tags": ["로그"],

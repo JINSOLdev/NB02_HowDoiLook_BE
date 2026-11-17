@@ -118,6 +118,105 @@ curl -X POST http://localhost:5050/images/analyze \
 연동 방식은 Meta 공식 [이미지 이해 문서](https://dev.meta.ai/docs/media-understanding)의 Base64 이미지 입력과
 [구조화된 출력 문서](https://dev.meta.ai/docs/structured-output)의 JSON Schema 응답을 따릅니다.
 
+## 날씨 기반 코디 평가와 추가 아이템 추천
+
+`POST /recommendations/outfit`에 코디 이미지와 위치 좌표를 보내면 서버가 해당 지역의 날씨를 조회하고,
+이미지와 날씨를 함께 Meta에 전달해 코디의 적합성과 추가하면 좋은 옷·액세서리를 추천합니다.
+`/weather`나 `/images/analyze`를 먼저 호출할 필요는 없습니다. 파일과 추천 결과는 저장하지 않으며 Firebase·DB에 접근하지 않습니다.
+
+`.env`에 `OPENWEATHER_API_KEY`와 `MODEL_API_KEY`를 설정하세요.
+기존 `OPENWEATHER_UNITS`, `OPENWEATHER_LANG`, `MODEL_NAME` 설정이 적용됩니다.
+날씨는 OpenWeather가 반환한 예보 중 해당 지역의 오늘 날짜에 속하는 남은 시간대의 요약이며,
+이미 지난 시간대를 포함한 하루 전체 관측값은 아닙니다.
+
+Postman에서는 `POST http://localhost:5050/recommendations/outfit`을 선택하고 **Body → form-data**에 아래 값을 추가합니다.
+필드 순서는 상관없으며 `Content-Type`은 Postman이 자동 설정하도록 두세요.
+
+| Key | Type | 값 |
+| --- | --- | --- |
+| `image` | File | JPEG·PNG·WebP 코디 이미지 한 장, 최대 8 MiB |
+| `latitude` | Text | 위도, -90~90 (예: `37.5665`) |
+| `longitude` | Text | 경도, -180~180 (예: `126.978`) |
+
+```bash
+curl -X POST http://localhost:5050/recommendations/outfit \
+  -F 'image=@/path/to/outfit.jpg;type=image/jpeg' \
+  -F 'latitude=37.5665' \
+  -F 'longitude=126.978'
+```
+
+성공 응답(`200 OK`) 예시:
+
+```json
+{
+  "weather": {
+    "location": "Seoul",
+    "date": "2026-11-16",
+    "description": "맑음",
+    "minTemperature": 8,
+    "maxTemperature": 15,
+    "feelsLikeMin": 6,
+    "feelsLikeMax": 14,
+    "humidity": 55,
+    "maxWindSpeed": 3,
+    "precipitationProbability": 20,
+    "temperatureUnit": "°C",
+    "windSpeedUnit": "m/s"
+  },
+  "closetItems": [
+    { "category": "상의", "color": "흰색", "description": "칼라와 단추가 있는 긴팔 셔츠" },
+    { "category": "하의", "color": "파란색", "description": "발목까지 내려오는 청바지" }
+  ],
+  "suitability": {
+    "status": "needs_adjustment",
+    "reason": "긴팔 셔츠와 긴바지는 낮에 입기 좋지만, 체감 기온이 낮아지는 시간대에는 겉옷이 필요합니다.",
+    "concerns": ["체감 최저 기온 6°C에서 상체가 추울 수 있습니다."]
+  },
+  "additionalItems": [
+    {
+      "category": "아우터",
+      "name": "가벼운 재킷",
+      "color": "네이비",
+      "reason": "낮은 체감 기온과 바람에 대비하기 좋습니다.",
+      "stylingTip": "흰색 셔츠 위에 걸치고 더워지면 벗어 휴대하세요."
+    }
+  ],
+  "outfits": [
+    {
+      "name": "재킷을 더한 데일리 코디",
+      "items": ["흰색 긴팔 셔츠", "파란색 청바지", "추천 아이템: 네이비 가벼운 재킷"],
+      "reason": "기존 코디에 보온할 수 있는 겉옷을 더해 체감 기온 변화에 대응합니다.",
+      "tips": "기온이 높은 시간대에는 재킷을 벗어 조절하세요."
+    }
+  ],
+  "weatherAdvice": "낮은 체감 기온에 대비해 겉옷을 챙기세요."
+}
+```
+
+`closetItems`에는 사진에서 확인한 아이템만 포함하고, `additionalItems`에는 추가를 제안하는 아이템을 최대 5개 반환합니다.
+`outfits`는 기존 아이템과 추천 아이템을 조합한 코디 예시이며, 추가할 필요가 없으면 `additionalItems`는 빈 배열입니다.
+사진만으로 확인하기 어려운 소재·보온성·방수 성능은 단정하지 않습니다.
+
+| `suitability.status` | 의미 |
+| --- | --- |
+| `suitable` | 해당 날씨에 적합 |
+| `needs_adjustment` | 겉옷·액세서리 등 보완 필요 |
+| `unsuitable` | 날씨에 맞게 코디 변경 필요 |
+| `unknown` | 사진이나 정보가 부족해 판단하기 어려움 |
+
+옷을 식별할 수 없으면 `status`는 `unknown`이고, `closetItems`, `additionalItems`, `outfits`는 빈 배열입니다.
+그 이유는 `suitability.reason`에 반환합니다.
+
+실패 응답은 `{ "message": "오류 설명" }` 형식입니다.
+
+| 상태 코드 | 원인 |
+| --- | --- |
+| `400` | 이미지·좌표 누락, 잘못된 좌표, 이미지 필드·형식·내용 오류 또는 복수 파일 |
+| `413` | 파일 크기 8 MiB 초과 |
+| `502` | 날씨·모델 API 연결·응답 오류 또는 유효하지 않은 추천 결과 |
+| `503` | API 키 미설정, 날씨 API 인증 실패(`401`), 모델 API 인증·권한·요청 제한(`401`, `403`, `429`) |
+| `504` | 날씨 API(10초) 또는 모델 API(30초) 요청 시간 초과 |
+
 ---
 
 ## 백엔드 서비스 흐름

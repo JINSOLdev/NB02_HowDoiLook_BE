@@ -5,6 +5,7 @@ type StructuredImageRequest = {
   userPrompt: string;
   schemaName: string;
   schema: Record<string, unknown>;
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 };
 
 export class ModelApiError extends Error {
@@ -40,6 +41,7 @@ export async function requestStructuredImageAnalysis(request: StructuredImageReq
       },
       body: JSON.stringify({
         model: process.env.MODEL_NAME?.trim() || 'muse-spark-1.3',
+        reasoning_effort: request.reasoningEffort,
         messages: [
           { role: 'system', content: request.systemPrompt },
           {

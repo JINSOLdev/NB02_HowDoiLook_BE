@@ -22,14 +22,14 @@ export async function createOutfitRecommendation(req: ImageRequest, res: Respons
   }
 
   if (!req.file) {
-    res.status(400).json({ message: 'image 필드에 옷장 사진을 첨부해 주세요.' });
+    res.status(400).json({ message: 'image 필드에 평가할 코디 이미지를 첨부해 주세요.' });
     return;
   }
 
   try {
     const weather = await getTodayWeather(latitude, longitude);
     const recommendation = await recommendOutfits(req.file.buffer, req.file.mimetype, weather);
-    res.status(200).json({ weather, ...recommendation });
+    res.status(200).json({ ...recommendation, weather });
   } catch (error) {
     const serviceError = error as HttpError;
     const statusCode = serviceError.statusCode ?? 502;

@@ -3,18 +3,6 @@ import multer from 'multer';
 
 const supportedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const maxImageBytes = 8 * 1024 * 1024;
-const uploadImage = multer({
-  storage: multer.memoryStorage(),
-  // Busboy raises its limit at equality; allow one extra byte to keep 8 MiB inclusive.
-  limits: { fileSize: maxImageBytes + 1, files: 1, fields: 0 },
-  fileFilter(_req, file, callback) {
-    if (!supportedImageTypes.has(file.mimetype)) {
-      callback(new Error('JPEG, PNG, WebP 이미지만 분석할 수 있습니다.'));
-      return;
-    }
-    callback(null, true);
-  },
-}).single('image');
 
 function matchesImageType(buffer: Buffer, mimeType: string): boolean {
   switch (mimeType) {
@@ -29,27 +17,44 @@ function matchesImageType(buffer: Buffer, mimeType: string): boolean {
   }
 }
 
-export const uploadImageForAnalysis: RequestHandler = (req, res, next) => {
-  uploadImage(req, res, (error: unknown) => {
-    if (error) {
-      const tooLarge = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE';
-      res.status(tooLarge ? 413 : 400).json({
-        message: tooLarge
-          ? '이미지는 8 MiB 이하여야 합니다.'
-          : 'image 필드에 JPEG, PNG, WebP 이미지 한 장만 첨부해 주세요.',
-      });
-      return;
-    }
+export function createImageMemoryUpload(maxFields = 0): RequestHandler {
+  const uploadImage = multer({
+    storage: multer.memoryStorage(),
+    // Busboy raises its limit at equality; allow one extra byte to keep 8 MiB inclusive.
+    limits: { fileSize: maxImageBytes + 1, files: 1, fields: maxFields },
+    fileFilter(_req, file, callback) {
+      if (!supportedImageTypes.has(file.mimetype)) {
+        callback(new Error('JPEG, PNG, WebP 이미지만 분석할 수 있습니다.'));
+        return;
+      }
+      callback(null, true);
+    },
+  }).single('image');
 
-    if (req.file && req.file.size > maxImageBytes) {
-      res.status(413).json({ message: '이미지는 8 MiB 이하여야 합니다.' });
-      return;
-    }
+  return (req, res, next) => {
+    uploadImage(req, res, (error: unknown) => {
+      if (error) {
+        const tooLarge = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE';
+        res.status(tooLarge ? 413 : 400).json({
+          message: tooLarge
+            ? '이미지는 8 MiB 이하여야 합니다.'
+            : '요청 필드를 확인하고 image 필드에 JPEG, PNG, WebP 이미지 한 장만 첨부해 주세요.',
+        });
+        return;
+      }
 
-    if (req.file && !matchesImageType(req.file.buffer, req.file.mimetype)) {
-      res.status(400).json({ message: '이미지 파일 내용이 JPEG, PNG, WebP 형식과 일치하지 않습니다.' });
-      return;
-    }
-    next();
-  });
-};
+      if (req.file && req.file.size > maxImageBytes) {
+        res.status(413).json({ message: '이미지는 8 MiB 이하여야 합니다.' });
+        return;
+      }
+
+      if (req.file && !matchesImageType(req.file.buffer, req.file.mimetype)) {
+        res.status(400).json({ message: '이미지 파일 내용이 JPEG, PNG, WebP 형식과 일치하지 않습니다.' });
+        return;
+      }
+      next();
+    });
+  };
+}
+
+export const uploadImageForAnalysis = createImageMemoryUpload();
